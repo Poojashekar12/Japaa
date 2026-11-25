@@ -1,6 +1,6 @@
 {
-  "name": "Japa Mala Counter",
-  "short_name": "Japa Mala",
+  "name": "Japaamadi",
+  "short_name": "Japaamadi",
   "description": "Count japa on a 108-bead rudraksha mala and track 16 temple rounds.",
   "start_url": "./",
   "scope": "./",
