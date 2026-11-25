@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Japa Mala Counter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Mukta:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: calm and devotional, one simple column you use with one thumb
+   IDEA: a prayer counter card: mantra, timer, the count, then temple rounds
+   PICTURE: the big count inside a 108-step progress ring is the centrepiece
+   COLOUR and TYPE: saffron and maroon, marigold accent; night is deep maroon. Marcellus + Mukta
+   LAYOUT: stacked cards in the order you use them, max 520px */
+:root{color-scheme:light dark;
+--bg:light-dark(#f7e3c4,#22090c);--card:light-dark(#fdf3e3,#33121a);--ink:light-dark(#4a1414,#f8e6cc);--soft:light-dark(#87502f,#d4ad88);
+--line:light-dark(#e8c99f,#4f2128);--track:light-dark(#ead2ae,#4a1d22);--accent:light-dark(#d9660a,#ffb52e);--deep:light-dark(#9e1b10,#e8662b)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Mukta,system-ui,sans-serif;overflow-x:clip;-webkit-tap-highlight-color:transparent;
+padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+main{max-width:520px;margin:0 auto;padding:16px 14px 32px;display:flex;flex-direction:column;gap:12px}
+h1{font:400 30px/1.05 Marcellus,serif;margin:4px 0 0;text-align:center}
+h2{font:400 21px/1.2 Marcellus,serif;margin:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px}
+.seg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:4px}
+.seg button{flex:1;border:0;background:none;color:var(--ink);font:600 16px Mukta,sans-serif;min-height:42px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+label.f{display:block;font-weight:600;margin-bottom:6px}
+input[type=text]{width:100%;font:16px Mukta,sans-serif;min-height:46px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+input[type=text]:disabled{opacity:.75}
+.addrow{display:flex;gap:8px}.addrow input{flex:1}.addrow .btn{flex:0 0 auto;min-width:84px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.chips:empty{display:none}
+.chip{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;background:var(--bg);overflow:hidden;max-width:100%}
+.chip button{border:0;background:none;color:var(--ink);font:600 15px Mukta,sans-serif;min-height:44px;cursor:pointer}
+.chip .pick{padding:0 6px 0 14px;text-align:left;overflow-wrap:anywhere}.chip .x{padding:0 12px;color:var(--soft);font-size:18px}
+.chip.on{background:var(--ink);border-color:var(--ink)}.chip.on button{color:var(--bg)}
+.now{font:400 clamp(22px,6.5vw,30px)/1.2 Marcellus,serif;text-align:center;margin:2px 0 6px;color:var(--deep);text-wrap:balance;overflow-wrap:anywhere}.now:empty{display:none}
+.small{color:var(--soft);font-size:14px;margin:6px 0 0}
+.timer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.timer b{font:400 34px/1 Marcellus,serif;font-variant-numeric:tabular-nums}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.btn{flex:1 1 auto;min-height:46px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:600 16px Mukta,sans-serif;padding:0 14px;cursor:pointer}
+.btn.hot{background:var(--deep);border-color:var(--deep);color:#fff8ec}
+.btn:disabled{opacity:.4;cursor:default}
+.btn:focus-visible,.seg button:focus-visible,#plus:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.dial{position:relative;width:min(86vw,360px);aspect-ratio:1;margin:4px auto 10px}
+.dial svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.bd{transition:opacity .2s}.bd.off{opacity:.38}
+.dial .ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.count{font:400 clamp(70px,24vw,112px)/1 Marcellus,serif;font-variant-numeric:tabular-nums}
+.of{color:var(--soft);font-size:18px;font-variant-numeric:tabular-nums}
+#plus{width:100%;min-height:96px;border:0;border-radius:18px;background:var(--deep);color:#fff8ec;font:600 26px Mukta,sans-serif;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+#plus:active{transform:scale(.985)}
+.totals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.totals .card{text-align:center}
+.totals b{display:block;font:400 34px/1.1 Marcellus,serif;font-variant-numeric:tabular-nums}
+.totals span{color:var(--soft)}
+.done{background:var(--ink);color:var(--bg);border-radius:14px;padding:12px;text-align:center;font-weight:600;display:none}
+.done.show{display:block}
+.rhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px}
+.rhead b{font:400 40px/1 Marcellus,serif;font-variant-numeric:tabular-nums}.rhead b small{font-size:20px;color:var(--soft)}
+.dots{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px;margin-bottom:12px}
+.dots i{aspect-ratio:1;border-radius:50%;background:var(--track);display:flex;align-items:center;justify-content:center;font:600 12px Mukta,sans-serif;font-style:normal;color:var(--soft)}
+.dots i.on{background:var(--accent);color:#3a0d0d}
+#roundPlus{min-height:64px;font-size:20px;flex-basis:100%}
+.auto{display:none}body.auto-mode .auto{display:block}body.auto-mode .manual{display:none}
+.auto .seg{margin:6px 0 10px}
+input[type=file]{font:15px Mukta,sans-serif;max-width:100%}
+.opt{display:flex;align-items:center;gap:10px;min-height:44px;cursor:pointer}
+.opt input{width:22px;height:22px;accent-color:var(--deep)}
+dialog{border:0;border-radius:18px;background:var(--card);color:var(--ink);padding:20px;max-width:340px;width:calc(100% - 32px)}
+dialog::backdrop{background:#0008}dialog p{color:var(--soft);margin:6px 0 14px}
+.pulse{animation:p .4s ease-out}@keyframes p{from{transform:scale(1.1)}to{transform:none}}
+@media (prefers-reduced-motion:reduce){.pulse{animation:none}#plus:active{transform:none}}
+</style>
+</head>
+<body>
+<main>
+<h1>Japa Mala Counter</h1>
+
+<div class="seg" role="group" aria-label="Counting mode">
+  <button id="mManual" aria-pressed="true">Manual mode</button>
+  <button id="mAuto" aria-pressed="false">Auto mode</button>
+</div>
+
+<div class="card">
+  <label class="f" for="mantra">Your mantra</label>
+  <form class="addrow" id="addForm">
+    <input type="text" id="mantra" placeholder="Type a mantra, e.g. Om Namah Shivaya" maxlength="120" autocomplete="off">
+    <button class="btn hot" type="submit" id="addBtn">Add</button>
+  </form>
+  <div class="chips" id="chips"></div>
+  <p class="small" id="chipNote">Tap a mantra to chant it. Tap × to remove it.</p>
+</div>
+
+<div class="card timer">
+  <div><b id="time">00:00</b><div class="small" style="margin:2px 0 0">Session time</div></div>
+  <div class="row"><button class="btn" id="tStart">Start</button><button class="btn" id="tPause">Pause</button><button class="btn" id="tStop">Stop</button></div>
+</div>
+
+<div class="card">
+  <p class="now" id="now"></p>
+  <div class="dial">
+    <svg id="mala" viewBox="0 0 200 200" aria-hidden="true">
+      <defs>
+        <radialGradient id="rud" cx="35%" cy="32%" r="75%"><stop offset="0" stop-color="#c7804a"/><stop offset=".45" stop-color="#8a4420"/><stop offset="1" stop-color="#3e1a0b"/></radialGradient>
+        <radialGradient id="rudOn" cx="35%" cy="32%" r="75%"><stop offset="0" stop-color="#ffcf8a"/><stop offset=".45" stop-color="#c76a24"/><stop offset="1" stop-color="#5a230b"/></radialGradient>
+        <radialGradient id="guru" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#ffe29a"/><stop offset=".5" stop-color="#d98a1c"/><stop offset="1" stop-color="#6b3208"/></radialGradient>
+      </defs>
+    </svg>
+    <div class="ctr"><div class="count" id="count">0</div><div class="of"><span id="cOf">0</span> / 108</div></div>
+  </div>
+
+  <div class="manual">
+    <button id="plus" aria-label="Count plus one">Count +1</button>
+    <div class="row" style="margin-top:8px"><button class="btn" id="undo">Undo</button><button class="btn" id="reset">Reset</button></div>
+  </div>
+
+  <div class="auto">
+    <h2>Auto play 108 times</h2>
+    <div class="seg" role="group" aria-label="Audio source">
+      <button id="sTts" aria-pressed="true">Text to speech</button>
+      <button id="sRec" aria-pressed="false">My recording</button>
+    </div>
+    <div id="ttsBox"><p class="small" style="margin:0 0 10px">Reads your mantra aloud slowly, 108 times. Voices depend on your phone.</p></div>
+    <div id="recBox" style="display:none">
+      <p class="small" style="margin:0 0 8px">Record your mantra with your phone's voice recorder app, then choose the file here.</p>
+      <input type="file" id="file" accept="audio/*">
+      <p class="small" id="fileName"></p>
+    </div>
+    <div class="row" style="margin-top:10px"><button class="btn hot" id="aStart">Start auto play (108×)</button><button class="btn" id="aStop" disabled>Stop</button><button class="btn" id="reset2">Reset</button></div>
+    <p class="small" id="aMsg"></p>
+  </div>
+</div>
+
+<div class="done" id="done" role="status"></div>
+
+<div class="totals">
+  <div class="card"><b id="total">0</b><span>Total count</span></div>
+  <div class="card"><b id="malas">0</b><span>Malas</span></div>
+</div>
+
+<div class="card">
+  <div class="rhead"><h2>Temple rounds</h2><b><span id="rN">0</span> <small>/ 16</small></b></div>
+  <div class="dots" id="dots"></div>
+  <div class="row">
+    <button class="btn hot" id="roundPlus">Round +1</button>
+    <button class="btn" id="roundUndo">Undo round</button>
+    <button class="btn" id="roundReset">Reset rounds</button>
+  </div>
+  <p class="small">Keep chanting above as you walk. Tap Round +1 each time you finish a circle of the temple.</p>
+</div>
+
+<div class="card">
+  <label class="opt"><input type="checkbox" id="vib" checked> Vibrate when a mala or a temple round is complete</label>
+</div>
+<p class="small" style="text-align:center">Counts are saved in this browser on this device.</p>
+</main>
+
+<dialog id="dlg">
+  <h2 id="dlgH">Reset?</h2><p id="dlgP"></p>
+  <div class="row"><button class="btn" id="dlgNo">Cancel</button><button class="btn hot" id="dlgYes">Reset</button></div>
+</dialog>
+
+<script>
+{
+const KEY='japa-counter-v2',M=108,R=16;
+const $=id=>document.getElementById(id);
+let s={mode:'manual',src:'tts',mantra:'',list:[],count:0,total:0,malas:0,rounds:0,elapsed:0,vib:true};
+try{const o=JSON.parse(localStorage.getItem(KEY));if(o)s={...s,...o}}catch(e){}
+if(s.mantra&&!s.list.includes(s.mantra))s.list.unshift(s.mantra);
+const esc=t=>String(t).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(s))}catch(e){}};
+const buzz=p=>{if(!s.vib)return;try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}};
+$('dots').innerHTML=Array.from({length:R},(_,i)=>`<i>${i+1}</i>`).join('');
+const dotEls=[...$('dots').children];
+
+/* rudraksha mala: 108 beads on a thread, guru bead and tassel at top */
+const NS='http://www.w3.org/2000/svg',CX=100,CY=100,RR=86;
+let mh='<circle cx="100" cy="100" r="86" fill="none" stroke="#b88a4a" stroke-width=".7" opacity=".7"/>';
+for(let i=0;i<M;i++){const a=(i+.5)/M*2*Math.PI-Math.PI/2,x=(CX+RR*Math.cos(a)).toFixed(2),y=(CY+RR*Math.sin(a)).toFixed(2);
+  mh+=`<g class="bd off" id="bd${i}" transform="translate(${x} ${y}) rotate(${(a*180/Math.PI).toFixed(1)})"><circle r="2.45" fill="url(#rud)" stroke="#2a1006" stroke-width=".25"/><path d="M-1.6 -.7 Q0 -1.4 1.6 -.7M-1.7 .5 Q0 1.2 1.7 .5M-.3 -2 Q.4 0 -.3 2" fill="none" stroke="#2a1006" stroke-width=".22" opacity=".7"/></g>`}
+mh+='<path d="M100 18 v10" stroke="#b88a4a" stroke-width=".8"/><circle cx="100" cy="9" r="5" fill="url(#guru)" stroke="#4a2006" stroke-width=".4"/><path d="M96.6 7.6 Q100 6 103.4 7.6M96.4 10.4 Q100 12 103.6 10.4M100 4.2 Q101 9 100 13.8" fill="none" stroke="#4a2006" stroke-width=".3" opacity=".7"/><path d="M100 14 l-3.5 9 h7z" fill="#c0392b" opacity=".9"/><path d="M97.4 15 l-1.2 8M100 15 v8.5M102.6 15 l1.2 8" stroke="#8e2418" stroke-width=".35"/>';
+$('mala').insertAdjacentHTML('beforeend',mh);
+const beadEls=Array.from({length:M},(_,i)=>$('bd'+i));
+
+/* timer */
+let tStart=null,tick=null;
+const fmt=ms=>{const t=Math.floor(ms/1000),h=Math.floor(t/3600),m=Math.floor(t%3600/60),x=t%60,p=n=>String(n).padStart(2,'0');return (h?h+':':'')+p(m)+':'+p(x)};
+const now=()=>s.elapsed+(tStart?Date.now()-tStart:0);
+const showTime=()=>$('time').textContent=fmt(now());
+function start(){if(tStart)return;tStart=Date.now();tick=setInterval(showTime,500);render()}
+function pause(){if(!tStart)return;s.elapsed=now();tStart=null;clearInterval(tick);save();render()}
+function stop(){tStart=null;clearInterval(tick);s.elapsed=0;save();render()}
+
+function render(){
+  const auto=s.mode==='auto';
+  document.body.classList.toggle('auto-mode',auto);
+  $('mManual').setAttribute('aria-pressed',!auto);$('mAuto').setAttribute('aria-pressed',auto);
+  $('sTts').setAttribute('aria-pressed',s.src==='tts');$('sRec').setAttribute('aria-pressed',s.src==='rec');
+  $('ttsBox').style.display=s.src==='tts'?'':'none';$('recBox').style.display=s.src==='rec'?'':'none';
+  $('count').textContent=s.count;$('cOf').textContent=s.count;
+  beadEls.forEach((b,i)=>{const on=i<s.count;b.classList.toggle('off',!on);b.firstChild.setAttribute('fill',i===s.count-1?'url(#rudOn)':'url(#rud)');b.firstChild.setAttribute('r',i===s.count-1?3.1:2.45)});
+  $('total').textContent=s.total.toLocaleString();$('malas').textContent=s.malas;
+  $('now').textContent=s.mantra;
+  $('chips').innerHTML=s.list.map((m,i)=>`<span class="chip${m===s.mantra?' on':''}"><button class="pick" data-i="${i}">${esc(m)}</button><button class="x" data-x="${i}" aria-label="Remove">×</button></span>`).join('');
+  $('chipNote').style.display=s.list.length?'':'none';
+  $('rN').textContent=s.rounds;dotEls.forEach((d,i)=>d.classList.toggle('on',i<s.rounds));
+  $('roundPlus').disabled=s.rounds>=R;$('roundUndo').disabled=s.rounds===0;
+  $('undo').disabled=s.total===0;$('vib').checked=s.vib;
+  $('tStart').disabled=!!tStart;$('tPause').disabled=!tStart;
+  $('aStart').disabled=playing;$('aStop').disabled=!playing;
+  showTime();
+}
+let msgT;
+function flash(t){const d=$('done');d.textContent=t;d.classList.add('show');clearTimeout(msgT);msgT=setTimeout(()=>d.classList.remove('show'),6000)}
+function pulse(){const n=$('count');n.classList.remove('pulse');void n.offsetWidth;n.classList.add('pulse')}
+
+function add(){
+  if(!tStart)start();
+  s.count++;s.total++;
+  if(s.count>=M){s.count=0;s.malas++;buzz([150,80,250]);pulse();flash(`Mala complete! ${s.malas} mala${s.malas>1?'s':''} done. Hari Om.`)}
+  save();render();
+}
+function undo(){
+  if(!s.total)return;s.total--;
+  if(s.count>0)s.count--;else if(s.malas>0){s.malas--;s.count=M-1}
+  save();render();
+}
+
+/* auto play */
+let playing=false,audio=null,fileUrl=null,autoLeft=0;
+function autoStep(){
+  if(!playing)return;
+  if(autoLeft<=0){stopAuto();$('aMsg').textContent='Auto play finished 108 repetitions.';return}
+  if(s.src==='tts'){
+    const u=new SpeechSynthesisUtterance(s.mantra||'Om');u.rate=.7;
+    u.onend=()=>{if(!playing)return;autoLeft--;add();autoStep()};
+    u.onerror=()=>{stopAuto();$('aMsg').textContent='Text to speech stopped. Your phone may not allow it here.'};
+    speechSynthesis.speak(u);
+  }else{
+    audio.currentTime=0;audio.play().catch(()=>{stopAuto();$('aMsg').textContent='This page could not play the audio file.'});
+  }
+}
+function startAuto(){
+  if(s.src==='tts'&&!('speechSynthesis' in window)){$('aMsg').textContent='Text to speech is not available in this browser.';return}
+  if(s.src==='rec'&&!fileUrl){$('aMsg').textContent='Choose your recorded mantra file first.';return}
+  if(s.src==='rec'){audio=new Audio(fileUrl);audio.onended=()=>{if(!playing)return;autoLeft--;add();autoStep()}}
+  playing=true;autoLeft=M-s.count;$('aMsg').textContent='Auto play in progress…';render();autoStep();
+}
+function stopAuto(){playing=false;try{speechSynthesis.cancel()}catch(e){}if(audio){audio.pause()}$('aMsg').textContent='';render()}
+$('file').onchange=e=>{const f=e.target.files[0];if(!f)return;if(fileUrl)URL.revokeObjectURL(fileUrl);fileUrl=URL.createObjectURL(f);$('fileName').textContent='Using: '+f.name};
+
+/* dialog */
+const dlg=$('dlg');let onYes=null;
+function ask(h,p,fn){$('dlgH').textContent=h;$('dlgP').textContent=p;onYes=fn;dlg.showModal?dlg.showModal():dlg.setAttribute('open','')}
+const closeD=()=>dlg.close?dlg.close():dlg.removeAttribute('open');
+$('dlgNo').onclick=closeD;$('dlgYes').onclick=()=>{onYes&&onYes();closeD()};
+const resetAll=()=>ask('Reset count?','This clears the count, total, malas and session time. Your mantras and temple rounds stay.',()=>{stopAuto();Object.assign(s,{count:0,total:0,malas:0});stop();save();render()});
+
+$('plus').addEventListener('click',add);
+document.addEventListener('keydown',e=>{if(dlg.open||s.mode!=='manual')return;if((e.key===' '||e.key==='Enter')&&!['BUTTON','INPUT'].includes(e.target.tagName)){e.preventDefault();add()}});
+$('undo').onclick=undo;$('reset').onclick=resetAll;$('reset2').onclick=resetAll;
+$('tStart').onclick=start;$('tPause').onclick=pause;$('tStop').onclick=stop;
+$('mManual').onclick=()=>{stopAuto();s.mode='manual';save();render()};$('mAuto').onclick=()=>{s.mode='auto';save();render()};
+$('sTts').onclick=()=>{s.src='tts';save();render()};$('sRec').onclick=()=>{s.src='rec';save();render()};
+$('aStart').onclick=startAuto;$('aStop').onclick=stopAuto;
+$('addForm').addEventListener('submit',e=>{e.preventDefault();const v=$('mantra').value.trim();if(!v)return;
+  if(!s.list.includes(v))s.list.unshift(v);s.mantra=v;$('mantra').value='';save();render()});
+$('chips').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.x!=null){const m=s.list.splice(+b.dataset.x,1)[0];if(m===s.mantra)s.mantra=s.list[0]||''}
+  else s.mantra=s.list[+b.dataset.i];save();render()});
+$('roundPlus').onclick=()=>{if(s.rounds>=R)return;s.rounds++;save();render();
+  if(s.rounds===R){buzz([200,100,200,100,400]);flash('All 16 temple rounds complete. Jai!')}else buzz([250])};
+$('roundUndo').onclick=()=>{if(s.rounds>0){s.rounds--;save();render()}};
+$('roundReset').onclick=()=>ask('Reset temple rounds?','This sets the temple rounds back to 0 of 16. Your japa count stays.',()=>{s.rounds=0;save();render()});
+$('vib').onchange=e=>{s.vib=e.target.checked;save();if(s.vib)buzz(60)};
+addEventListener('pagehide',()=>{if(tStart){s.elapsed=now();tStart=Date.now();save()}});
+render();
+}
+</script>
+</body>
+</html>
