@@ -36,6 +36,17 @@ input[type=text]:disabled{opacity:.75}
 .chip .pick{padding:0 6px 0 14px;text-align:left;overflow-wrap:anywhere}.chip .x{padding:0 12px;color:var(--soft);font-size:18px}
 .chip.on{background:var(--ink);border-color:var(--ink)}.chip.on button{color:var(--bg)}
 .now{font:400 clamp(22px,6.5vw,30px)/1.2 Marcellus,serif;text-align:center;margin:2px 0 6px;color:var(--deep);text-wrap:balance;overflow-wrap:anywhere}.now:empty{display:none}
+.today{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:12px}
+.today div{background:var(--bg);border-radius:12px;padding:8px 6px;text-align:center}
+.today b{display:block;font:400 22px/1.1 Marcellus,serif;font-variant-numeric:tabular-nums;white-space:nowrap}.today span{font-size:13px;color:var(--soft)}
+.scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:15px}
+th{text-align:left;color:var(--soft);font-weight:600;font-size:13px;padding:6px 8px 6px 0;white-space:nowrap}
+td{padding:8px 8px 8px 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums;white-space:nowrap}
+td:last-child{white-space:normal;min-width:8em}
+@media(max-width:420px){.today{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.acct .btn{flex:0 0 auto}.gbtn{display:inline-flex;align-items:center;gap:10px;background:#fff;color:#3c4043;border-color:#dadce0;width:100%;justify-content:center}
+#acctIn{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.who{display:flex;flex-direction:column}.who span:first-child{font-weight:600;overflow-wrap:anywhere}
+#acctMsg:empty{display:none}
 .small{color:var(--soft);font-size:14px;margin:6px 0 0}
 .timer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .timer b{font:400 34px/1 Marcellus,serif;font-variant-numeric:tabular-nums}
@@ -78,6 +89,13 @@ dialog::backdrop{background:#0008}dialog p{color:var(--soft);margin:6px 0 14px}
 <body>
 <main>
 <h1>Japa Mala Counter</h1>
+
+<div class="card acct" id="acct">
+  <div id="acctOut"><p style="margin:0 0 8px">Sign in to keep your history safe and see it on any phone or laptop.</p>
+    <button class="btn gbtn" id="signIn"><svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.6 13.3l7.8 6C12.3 13.4 17.6 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.3 5.7c4.3-4 7-9.9 7-17.1z"/><path fill="#FBBC05" d="M10.4 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C.9 16.6 0 20.2 0 24s.9 7.4 2.6 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.3-5.7c-2 1.4-4.7 2.3-8.6 2.3-6.4 0-11.7-3.9-13.6-9.4l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>Sign in with Google</button></div>
+  <div id="acctIn" style="display:none"><div class="who"><span id="who"></span><span class="small" id="sync" style="margin:0"></span></div><button class="btn" id="signOut">Sign out</button></div>
+  <p class="small" id="acctMsg"></p>
+</div>
 
 <div class="seg" role="group" aria-label="Counting mode">
   <button id="mManual" aria-pressed="true">Manual mode</button>
@@ -152,6 +170,15 @@ dialog::backdrop{background:#0008}dialog p{color:var(--soft);margin:6px 0 14px}
   <p class="small">Keep chanting above as you walk. Tap Round +1 each time you finish a circle of the temple.</p>
 </div>
 
+<div class="card hist">
+  <div class="rhead"><h2>History</h2><span class="small" id="streak" style="margin:0"></span></div>
+  <p class="small" style="margin:0 0 8px">Today</p>
+  <div class="today" id="hToday"></div>
+  <p class="small" id="hEmpty">Your daily chanting will be listed here.</p>
+  <div class="scroll" id="hTable"><table><thead><tr><th>Day</th><th>Chants</th><th>Malas</th><th>Rounds</th><th>Time</th><th>Mantra</th></tr></thead><tbody id="hRows"></tbody></table></div>
+  <button class="btn" id="hClear" style="margin-top:10px">Clear history</button>
+</div>
+
 <div class="card">
   <label class="opt"><input type="checkbox" id="vib" checked> Vibrate when a mala or a temple round is complete</label>
 </div>
@@ -167,11 +194,12 @@ dialog::backdrop{background:#0008}dialog p{color:var(--soft);margin:6px 0 14px}
 {
 const KEY='japa-counter-v2',M=108,R=16;
 const $=id=>document.getElementById(id);
-let s={mode:'manual',src:'tts',mantra:'',list:[],count:0,total:0,malas:0,rounds:0,elapsed:0,vib:true};
+let s={mode:'manual',src:'tts',mantra:'',list:[],days:{},count:0,total:0,malas:0,rounds:0,elapsed:0,vib:true};
 try{const o=JSON.parse(localStorage.getItem(KEY));if(o)s={...s,...o}}catch(e){}
 if(s.mantra&&!s.list.includes(s.mantra))s.list.unshift(s.mantra);
 const esc=t=>String(t).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(s))}catch(e){}};
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(s))}catch(e){};queueSync()};
+let queueSync=()=>{};
 const buzz=p=>{if(!s.vib)return;try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}};
 $('dots').innerHTML=Array.from({length:R},(_,i)=>`<i>${i+1}</i>`).join('');
 const dotEls=[...$('dots').children];
@@ -185,14 +213,22 @@ mh+='<path d="M100 18 v10" stroke="#b88a4a" stroke-width=".8"/><circle cx="100" 
 $('mala').insertAdjacentHTML('beforeend',mh);
 const beadEls=Array.from({length:M},(_,i)=>$('bd'+i));
 
+/* history: one entry per day */
+const dkey=(d=new Date())=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const today=()=>{const k=dkey();return s.days[k]||(s.days[k]={c:0,m:0,r:0,t:0,mt:{}})};
+function log(f,n){const d=today();d[f]=Math.max(0,(d[f]||0)+n);if(f==='c'&&s.mantra){d.mt[s.mantra]=Math.max(0,(d.mt[s.mantra]||0)+n)}}
+let lastT=Date.now();
+function flushTime(){const n=Date.now();if(tStart)log('t',n-lastT);lastT=n}
+
 /* timer */
 let tStart=null,tick=null;
 const fmt=ms=>{const t=Math.floor(ms/1000),h=Math.floor(t/3600),m=Math.floor(t%3600/60),x=t%60,p=n=>String(n).padStart(2,'0');return (h?h+':':'')+p(m)+':'+p(x)};
 const now=()=>s.elapsed+(tStart?Date.now()-tStart:0);
 const showTime=()=>$('time').textContent=fmt(now());
-function start(){if(tStart)return;tStart=Date.now();tick=setInterval(showTime,500);render()}
-function pause(){if(!tStart)return;s.elapsed=now();tStart=null;clearInterval(tick);save();render()}
-function stop(){tStart=null;clearInterval(tick);s.elapsed=0;save();render()}
+function start(){if(tStart)return;tStart=Date.now();lastT=tStart;tick=setInterval(()=>{showTime();flushTime();if(++tc%20===0){save();renderHist()}},500);render()}
+let tc=0;
+function pause(){if(!tStart)return;flushTime();s.elapsed=now();tStart=null;clearInterval(tick);save();render()}
+function stop(){flushTime();tStart=null;clearInterval(tick);s.elapsed=0;save();render()}
 
 function render(){
   const auto=s.mode==='auto';
@@ -211,7 +247,19 @@ function render(){
   $('undo').disabled=s.total===0;$('vib').checked=s.vib;
   $('tStart').disabled=!!tStart;$('tPause').disabled=!tStart;
   $('aStart').disabled=playing;$('aStop').disabled=!playing;
-  showTime();
+  showTime();renderHist();
+}
+function renderHist(){
+  const t=today(),keys=Object.keys(s.days).sort().reverse();
+  $('hToday').innerHTML=[[t.c.toLocaleString(),'Chants'],[t.m,'Malas'],[t.r,'Temple rounds'],[fmt(t.t),'Time']].map(([v,l])=>`<div><b>${v}</b><span>${l}</span></div>`).join('');
+  let st=0;const d=new Date();if(!(s.days[dkey(d)]?.c>0))d.setDate(d.getDate()-1);
+  while(s.days[dkey(d)]?.c>0){st++;d.setDate(d.getDate()-1)}
+  $('streak').textContent=st?`${st} day streak`:'';
+  const rows=keys.filter(k=>{const x=s.days[k];return x.c||x.r||x.t>=1000}).slice(0,60);
+  $('hRows').innerHTML=rows.map(k=>{const x=s.days[k],top=Object.entries(x.mt||{}).sort((a,b)=>b[1]-a[1])[0];
+    const dt=new Date(k+'T00:00').toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'});
+    return `<tr><td>${esc(dt)}</td><td>${x.c}</td><td>${x.m}</td><td>${x.r}</td><td>${fmt(x.t)}</td><td>${top?esc(top[0]):''}</td></tr>`}).join('');
+  $('hEmpty').style.display=rows.length?'none':'';$('hTable').style.display=rows.length?'':'none';
 }
 let msgT;
 function flash(t){const d=$('done');d.textContent=t;d.classList.add('show');clearTimeout(msgT);msgT=setTimeout(()=>d.classList.remove('show'),6000)}
@@ -219,13 +267,13 @@ function pulse(){const n=$('count');n.classList.remove('pulse');void n.offsetWid
 
 function add(){
   if(!tStart)start();
-  s.count++;s.total++;
-  if(s.count>=M){s.count=0;s.malas++;buzz([150,80,250]);pulse();flash(`Mala complete! ${s.malas} mala${s.malas>1?'s':''} done. Hari Om.`)}
+  s.count++;s.total++;log('c',1);
+  if(s.count>=M){s.count=0;s.malas++;log('m',1);buzz([150,80,250]);pulse();flash(`Mala complete! ${s.malas} mala${s.malas>1?'s':''} done. Hari Om.`)}
   save();render();
 }
 function undo(){
-  if(!s.total)return;s.total--;
-  if(s.count>0)s.count--;else if(s.malas>0){s.malas--;s.count=M-1}
+  if(!s.total)return;s.total--;log('c',-1);
+  if(s.count>0)s.count--;else if(s.malas>0){s.malas--;s.count=M-1;log('m',-1)}
   save();render();
 }
 
@@ -271,13 +319,66 @@ $('addForm').addEventListener('submit',e=>{e.preventDefault();const v=$('mantra'
 $('chips').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   if(b.dataset.x!=null){const m=s.list.splice(+b.dataset.x,1)[0];if(m===s.mantra)s.mantra=s.list[0]||''}
   else s.mantra=s.list[+b.dataset.i];save();render()});
-$('roundPlus').onclick=()=>{if(s.rounds>=R)return;s.rounds++;save();render();
+$('roundPlus').onclick=()=>{if(s.rounds>=R)return;s.rounds++;log('r',1);save();render();
   if(s.rounds===R){buzz([200,100,200,100,400]);flash('All 16 temple rounds complete. Jai!')}else buzz([250])};
-$('roundUndo').onclick=()=>{if(s.rounds>0){s.rounds--;save();render()}};
+$('roundUndo').onclick=()=>{if(s.rounds>0){s.rounds--;log('r',-1);save();render()}};
 $('roundReset').onclick=()=>ask('Reset temple rounds?','This sets the temple rounds back to 0 of 16. Your japa count stays.',()=>{s.rounds=0;save();render()});
 $('vib').onchange=e=>{s.vib=e.target.checked;save();if(s.vib)buzz(60)};
-addEventListener('pagehide',()=>{if(tStart){s.elapsed=now();tStart=Date.now();save()}});
+addEventListener('pagehide',()=>{if(tStart){flushTime();s.elapsed=now();tStart=Date.now();save()}});
+$('hClear').onclick=()=>ask('Clear history?','This deletes your saved daily history. Current counts stay.',()=>{s.days={};save();render()});
 render();
+
+/* ---------- login and cloud history (Firebase) ----------
+   Paste your Firebase web app config below. These values are safe to be public;
+   your data is protected by the Firestore rules. */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCsVjxr4N3apDS-rCskIUuKk4Pkp3FoeL0",
+  authDomain: "japaa-6690f.firebaseapp.com",
+  projectId: "japaa-6690f",
+  storageBucket: "japaa-6690f.firebasestorage.app",
+  messagingSenderId: "291080446270",
+  appId: "1:291080446270:web:bb131ea997761b3d434c6f"
+};
+
+const SDK='https://www.gstatic.com/firebasejs/10.14.1/';
+const loadJs=src=>new Promise((ok,no)=>{const t=document.createElement('script');t.src=src;t.onload=ok;t.onerror=no;document.head.appendChild(t)});
+const SYNC_KEYS=['days','list','mantra','total','malas','count','rounds'];
+function merge(remote){
+  if(!remote)return;
+  for(const [k,r] of Object.entries(remote.days||{})){const l=s.days[k];
+    if(!l){s.days[k]=r;continue}
+    for(const f of ['c','m','r','t'])l[f]=Math.max(l[f]||0,r[f]||0);
+    for(const [m,n] of Object.entries(r.mt||{}))l.mt[m]=Math.max(l.mt[m]||0,n)}
+  for(const m of remote.list||[])if(!s.list.includes(m))s.list.push(m);
+  if(!s.mantra&&remote.mantra)s.mantra=remote.mantra;
+  if((remote.total||0)>s.total){for(const k of ['total','malas','count'])s[k]=remote[k]||0}
+  if((remote.rounds||0)>s.rounds)s.rounds=remote.rounds;
+}
+(async()=>{
+  if(!FIREBASE_CONFIG){$('acct').style.display='none';return}
+  try{await loadJs(SDK+'firebase-app-compat.js');await loadJs(SDK+'firebase-auth-compat.js');await loadJs(SDK+'firebase-firestore-compat.js')}
+  catch(e){$('acctMsg').textContent='Could not load sign-in. Check your internet connection.';return}
+  firebase.initializeApp(FIREBASE_CONFIG);
+  const auth=firebase.auth(),db=firebase.firestore();
+  let ref=null,timer=null;
+  const setSync=t=>$('sync').textContent=t;
+  queueSync=()=>{if(!ref)return;clearTimeout(timer);setSync('Saving…');timer=setTimeout(async()=>{
+    const data={};for(const k of SYNC_KEYS)data[k]=s[k];data.updated=Date.now();
+    try{await ref.set(data);setSync('History saved to your account')}catch(e){setSync('Not saved yet. Will retry.');}},1500)};
+  $('signIn').onclick=async()=>{$('acctMsg').textContent='';const p=new firebase.auth.GoogleAuthProvider();
+    try{await auth.signInWithPopup(p)}catch(e){
+      if(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment'){try{await auth.signInWithRedirect(p)}catch(x){$('acctMsg').textContent='Sign-in failed: '+x.message}}
+      else if(e.code!=='auth/popup-closed-by-user')$('acctMsg').textContent='Sign-in failed: '+e.message}};
+  $('signOut').onclick=()=>auth.signOut();
+  auth.onAuthStateChanged(async u=>{
+    $('acctOut').style.display=u?'none':'';$('acctIn').style.display=u?'flex':'none';
+    if(!u){ref=null;return}
+    $('who').textContent=u.displayName||u.email||'Signed in';setSync('Loading your history…');
+    ref=db.collection('users').doc(u.uid);
+    try{const snap=await ref.get();merge(snap.exists?snap.data():null);save();render();setSync('History saved to your account')}
+    catch(e){setSync('Could not load history: '+e.message)}
+  });
+})();
 }
 </script>
 </body>
