@@ -19,10 +19,14 @@
 *{box-sizing:border-box;min-width:0}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Mukta,system-ui,sans-serif;overflow-x:clip;-webkit-tap-highlight-color:transparent;
 padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-main{max-width:520px;margin:0 auto;padding:16px 14px 32px;display:flex;flex-direction:column;gap:12px}
+main{max-width:520px;margin:0 auto;padding:16px 14px 32px;display:flex;flex-direction:column;gap:12px;width:100%}
+.beads-bg{position:fixed;inset:-10%;pointer-events:none;z-index:0;background:url(beads-bg.webp?v=2) 0 0/560px 560px repeat;opacity:.2}
+:root[data-theme=dark] .beads-bg{opacity:.35}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .beads-bg{opacity:.35}}
+main{position:relative;z-index:1}
 h1{font:400 30px/1.05 Marcellus,serif;margin:4px 0 0;text-align:center}
 h2{font:400 21px/1.2 Marcellus,serif;margin:0}
-.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px}
+.card{background:color-mix(in srgb,var(--card) 84%,transparent);-webkit-backdrop-filter:blur(1.5px);backdrop-filter:blur(1.5px);border:1px solid var(--line);border-radius:18px;padding:14px}
 .seg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:4px}
 .seg button{flex:1;border:0;background:none;color:var(--ink);font:600 16px Mukta,sans-serif;min-height:42px;border-radius:999px;cursor:pointer}
 .seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
@@ -87,6 +91,9 @@ dialog::backdrop{background:#0008}dialog p{color:var(--soft);margin:6px 0 14px}
 </style>
 </head>
 <body>
+<div class="beads-bg" aria-hidden="true"></div>
+<div class="layout">
+
 <main>
 <h1>Japa Mala Counter</h1>
 
@@ -184,6 +191,7 @@ dialog::backdrop{background:#0008}dialog p{color:var(--soft);margin:6px 0 14px}
 </div>
 <p class="small" style="text-align:center">Counts are saved in this browser on this device.</p>
 </main>
+</div>
 
 <dialog id="dlg">
   <h2 id="dlgH">Reset?</h2><p id="dlgP"></p>
